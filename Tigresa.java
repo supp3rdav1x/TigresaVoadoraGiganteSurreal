@@ -1,8 +1,10 @@
 package TVGS;
+
 import robocode.*;
 import java.awt.*;
 import robocode.HitRobotEvent;
 import robocode.ScannedRobotEvent;
+import static robocode.util.Utils.normalRelativeAngleDegrees;
 //import java.awt.Color;
 
 // API help : http://robocode.sourceforge.net/docs/robocode/robocode/Robot.html
@@ -10,11 +12,14 @@ import robocode.ScannedRobotEvent;
 /**
  * Tigresa - a robot by (your name here)
  */
-public class Tigresa extends AdvancedRobot 
-{
-int dist =50;
+public class Tigresa extends AdvancedRobot {
+	int dist = 50;
+	int count = 0; // Keeps track of how long we've
+	// been searching for our target
+	double gunTurnAmt; // How much to turn our gun when searching
+	String trackName; // Name of the robot we're currently tracking
 	boolean movingForward;
-		int turnDirection = 1; // Clockwise or counterclockwise
+	int turnDirection = 1; // Clockwise or counterclockwise
 
 	/**
 	 * run: Tigresa's default behavior
@@ -22,12 +27,12 @@ int dist =50;
 	public void run() {
 		// Initialization of the robot should be put here
 		setBodyColor(Color.orange);
-    	setGunColor(Color.orange);
+		setGunColor(Color.orange);
 		setRadarColor(Color.black);
 		setScanColor(Color.magenta);
-		
+
 		setBulletColor(Color.white);
-		//setBulletColor(Color.magenta);
+		// setBulletColor(Color.magenta);
 
 		// After trying out your robot, try uncommenting the import at the top,
 		// and the next line:
@@ -35,30 +40,15 @@ int dist =50;
 		// setColors(Color.red,Color.blue,Color.green); // body,gun,radar
 
 		// Robot main loop
-			while (true) {
-			// Tell the game we will want to move ahead 40000 -- some large number
-			setAhead(25000);
-			movingForward = true;
-			// Tell the game we will want to turn right 90
-			setTurnRight(90);
-			// At this point, we have indicated to the game that *when we do something*,
-			// we will want to move ahead and turn right.  That's what "set" means.
-			// It is important to realize we have not done anything yet!
-			// In order to actually move, we'll want to call a method that
-			// takes real time, such as waitFor.
-			// waitFor actually starts the action -- we start moving and turning.
-			// It will not return until we have finished turning.
-			waitFor(new TurnCompleteCondition(this));
-			// Note:  We are still moving ahead now, but the turn is complete.
-			// Now we'll turn the other way...
-			setTurnLeft(180);
-			// ... and wait for the turn to finish ...
-			waitFor(new TurnCompleteCondition(this));
-			// ... then the other way ...
-			setTurnRight(180);
-			// .. and wait for that turn to finish.
-			waitFor(new TurnCompleteCondition(this));
-			// then back to the top to do it all again
+		while (true) {
+			// Tell the game that when we take move,
+			// we'll also want to turn right... a lot.
+			setTurnRight(10000);
+			// Limit our speed to 5
+			setMaxVelocity(5);
+			// Start moving (and turning)
+			ahead(10000);
+			// Repeat.
 		}
 	}
 
@@ -66,15 +56,44 @@ int dist =50;
 	 * onScannedRobot: What to do when you see another robot
 	 */
 	public void onScannedRobot(ScannedRobotEvent e) {
-		// Replace the next line with any behavior you would like
-		if (e.getDistance() < 50 && getEnergy() > 50) {
-			fire(3);
-		} // caso contrário, atira com intensidade 1.
-		else {
-			fire(1);
+
+		// If we have a target, and this isn't it, return immediately
+		// so we can get more ScannedRobotEvents.
+		if (trackName != null && !e.getName().equals(trackName)) {
+			return;
 		}
-		// Depois de atirar chama o radar novamente,
-		// antes de girar o canhão
+
+		// If we don't have a target, well, now we do!
+		if (trackName == null) {
+			trackName = e.getName();
+			out.println("Tracking " + trackName);
+		}
+		// This is our target. Reset count (see the run method)
+		count = 0;
+		// If our target is too far away, turn and move toward it.
+		if (e.getDistance() > 150) {
+			gunTurnAmt = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
+
+			turnGunRight(gunTurnAmt); // Try changing these to setTurnGunRight,
+			turnRight(e.getBearing()); // and see how much Tracker improves...
+			// (you'll have to make Tracker an AdvancedRobot)
+			ahead(e.getDistance() - 140);
+			return;
+		}
+
+		// Our target is close.
+		gunTurnAmt = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
+		turnGunRight(gunTurnAmt);
+		fire(3);
+
+		// Our target is too close! Back up.
+		if (e.getDistance() < 100) {
+			if (e.getBearing() > -90 && e.getBearing() <= 90) {
+				back(80);
+			} else {
+				ahead(40);
+			}
+		}
 		scan();
 	}
 
@@ -85,12 +104,12 @@ int dist =50;
 		// Replace the next line with any behavior you would like
 		back(10);
 	}
-	
+
 	/**
 	 * onHitWall: What to do when you hit a wall
 	 */
-	
-		public void onHitRobot(HitRobotEvent e) {
+
+	public void onHitRobot(HitRobotEvent e) {
 		if (e.getBearing() >= 0) {
 			turnDirection = 1;
 		} else {
@@ -117,8 +136,8 @@ int dist =50;
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
 		reverseDirection();
-	}	
-	
+	}
+
 	public void reverseDirection() {
 		if (movingForward) {
 			setBack(25000);
