@@ -7,25 +7,26 @@ import robocode.ScannedRobotEvent;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 //import java.awt.Color;
 
-// API help : http://robocode.sourceforge.net/docs/robocode/robocode/Robot.html
-
 /**
  * Tigresa - a robot by (your name here)
  */
+
 public class Tigresa extends AdvancedRobot {
-	int dist = 50;
-	int count = 0; // Keeps track of how long we've
-	// been searching for our target
-	double gunTurnAmt; // How much to turn our gun when searching
-	String trackName; // Name of the robot we're currently tracking
+	int dist = 50; // distância para se mover
+	int count = 0; // Mantém o controle de quanto tempo temos
+	// vem procurando nosso alvo
+
+	double gunTurnAmt;
+	String trackName;
 	boolean movingForward;
-	int turnDirection = 1; // Clockwise or counterclockwise
+	int turnDirection = 1; // Se mover no sentido horario ou antihorario
 
 	/**
 	 * run: Tigresa's default behavior
 	 */
+
 	public void run() {
-		// Initialization of the robot should be put here
+
 		setBodyColor(Color.orange);
 		setGunColor(Color.orange);
 		setRadarColor(Color.black);
@@ -33,60 +34,58 @@ public class Tigresa extends AdvancedRobot {
 
 		setBulletColor(Color.white);
 		// setBulletColor(Color.magenta);
-
-		// After trying out your robot, try uncommenting the import at the top,
-		// and the next line:
-
 		// setColors(Color.red,Color.blue,Color.green); // body,gun,radar
 
 		// Robot main loop
 		while (true) {
-			// Tell the game that when we take move,
-			// we'll also want to turn right... a lot.
+			// Diga ao jogo que quando agirmos,
+			// nós também vamos querer virar muito á direita.
 			setTurnRight(10000);
-			// Limit our speed to 5
+			// Limite nossa velocidade para 5
 			setMaxVelocity(5);
-			// Start moving (and turning)
+			// Comece a se mover (e girar)
 			ahead(10000);
-			// Repeat.
+			// Repetir
 		}
 	}
 
 	/**
 	 * onScannedRobot: What to do when you see another robot
 	 */
+	// O que fazer quando você vê outro robô:
+
 	public void onScannedRobot(ScannedRobotEvent e) {
 
-		// If we have a target, and this isn't it, return immediately
-		// so we can get more ScannedRobotEvents.
+		// Se tivermos um alvo, e não é isso, retorne imediatamente
+		// para que possamos obter mais Eventos com energia.
 		if (trackName != null && !e.getName().equals(trackName)) {
 			return;
 		}
 
-		// If we don't have a target, well, now we do!
+		// Se não temos um alvo, bem, agora temos!
 		if (trackName == null) {
 			trackName = e.getName();
 			out.println("Tracking " + trackName);
 		}
-		// This is our target. Reset count (see the run method)
+		// Esse é o nosso alvo. Contagem de reset (veja o método de execução)
 		count = 0;
-		// If our target is too far away, turn and move toward it.
+		// Se nosso alvo está muito longe, vire-se e vá em direção a ele.
 		if (e.getDistance() > 150) {
 			gunTurnAmt = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
 
-			turnGunRight(gunTurnAmt); // Try changing these to setTurnGunRight,
-			turnRight(e.getBearing()); // and see how much Tracker improves...
-			// (you'll have to make Tracker an AdvancedRobot)
+			turnGunRight(gunTurnAmt); // Tente alterá-los para definirTurnGunRight,
+			turnRight(e.getBearing()); // e ver o quanto o Tracker melhora...
+			// (terá que fazer do Tracker um AdvancedRobot)
 			ahead(e.getDistance() - 140);
 			return;
 		}
 
-		// Our target is close.
+		// Nosso alvo está perto, atire em intencidade 3
 		gunTurnAmt = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
 		turnGunRight(gunTurnAmt);
 		fire(3);
 
-		// Our target is too close! Back up.
+		// Nosso alvo está muito perto! Recuar.
 		if (e.getDistance() < 100) {
 			if (e.getBearing() > -90 && e.getBearing() <= 90) {
 				back(80);
@@ -98,16 +97,12 @@ public class Tigresa extends AdvancedRobot {
 	}
 
 	/**
-	 * onHitByBullet: What to do when you're hit by a bullet
+	 * O que fazer quando você bate em uma parede:
 	 */
+
 	public void onHitByBullet(HitByBulletEvent e) {
-		// Replace the next line with any behavior you would like
 		back(10);
 	}
-
-	/**
-	 * onHitWall: What to do when you hit a wall
-	 */
 
 	public void onHitRobot(HitRobotEvent e) {
 		if (e.getBearing() >= 0) {
@@ -117,8 +112,8 @@ public class Tigresa extends AdvancedRobot {
 		}
 		turnRight(e.getBearing());
 
-		// Determine a shot that won't kill the robot...
-		// We want to ram him instead for bonus points
+		// Determine um tiro que não matará o oponente...
+		// Queremos fuzilar o oponente, não pegar bonus
 		if (e.getEnergy() > 16) {
 			fire(3);
 		} else if (e.getEnergy() > 10) {
@@ -130,11 +125,10 @@ public class Tigresa extends AdvancedRobot {
 		} else if (e.getEnergy() > .4) {
 			fire(.1);
 		}
-		ahead(40); // Ram him again!
+		ahead(40); // Fuzila ele denovo!
 	}
 
 	public void onHitWall(HitWallEvent e) {
-		// Replace the next line with any behavior you would like
 		reverseDirection();
 	}
 
